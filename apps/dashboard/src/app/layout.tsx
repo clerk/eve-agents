@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { AppHeader } from '@/components/app-header'
 import './globals.css'
 
 const geistSans = Geist({
@@ -31,10 +30,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="h-full overflow-hidden flex flex-col">
         <ClerkProvider>
           <TooltipProvider>
-            <AppHeader />
             {children}
             <Toaster />
           </TooltipProvider>

@@ -2,8 +2,8 @@ import { Chat } from '@/components/chat/chat'
 
 export default function ChatPage() {
   return (
-    <div className="max-w-2xl mx-auto p-6 w-full h-[calc(100vh-4rem)] relative">
-      <div className="flex flex-col h-full min-h-0">
+    <div className="min-h-0 flex-1 p-6">
+      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-2xl flex-col">
         <Chat />
       </div>
     </div>

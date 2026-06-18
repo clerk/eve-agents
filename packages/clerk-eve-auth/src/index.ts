@@ -1,6 +1,6 @@
 import { createClerkClient } from '@clerk/backend'
 import type { ClerkClient, ClerkOptions } from '@clerk/backend'
-import { extractBearerToken, type AuthFn } from 'eve/channels/auth'
+import type { AuthFn } from 'eve/channels/auth'
 
 // The agents.json graph shape, served by the dashboard and built by the
 // `eve-agents` CLI. Re-exported here so both get the types from the package
@@ -46,15 +46,16 @@ export function clerkAuth(options: ClerkOptions = {}): AuthFn<Request> {
     options.machineSecretKey ?? process.env.CLERK_MACHINE_SECRET_KEY
 
   return async request => {
-    const token = extractBearerToken(request.headers.get('authorization'))
-    if (!token) return null
+    // Authenticate from the session cookie OR a bearer token (API key, M2M,
+    // OAuth). Don't short-circuit on a missing Authorization header — the
+    // dashboard's same-origin calls carry a Clerk session cookie, not a bearer.
+    // A non-Clerk request (e.g. a Vercel OIDC token) throws or comes back
+    // unauthenticated, so the walk falls through to the next authenticator.
+    const state = await clerk
+      .authenticateRequest(request, { acceptsToken: 'any', machineSecretKey })
+      .catch(() => null)
 
-    const state = await clerk.authenticateRequest(request, {
-      acceptsToken: 'any',
-      machineSecretKey,
-    })
-
-    if (!state.isAuthenticated) return null
+    if (!state?.isAuthenticated) return null
 
     const auth = state.toAuth()
 

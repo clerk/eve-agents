@@ -8,6 +8,5 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true
-  },
-  "include": ["agent/**/*.ts", "evals/**/*.ts", ".eve/**/*.d.ts"]
+  }
 }

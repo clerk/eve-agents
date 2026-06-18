@@ -7,5 +7,7 @@ node_modules
 .output
 .nitro
 dist
+.turbo
 .DS_Store
 *.tsbuildinfo
+agents.json

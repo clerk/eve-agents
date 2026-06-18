@@ -1,0 +1,10 @@
+{
+ "extends": ["//"],
+  "tasks": {
+    "dev": {
+      "with": ["project-agent#dev:headless"],
+      "persistent": true,
+      "cache": false
+    }
+  }
+}

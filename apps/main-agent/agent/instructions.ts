@@ -8,6 +8,7 @@ export default defineDynamic({
 
       const sections = [
         'You are a helpful assistant.',
+        'Prefer the `ask_question` tool to answer questions from the caller.',
         `The caller is on the ${plan} plan. Match the depth of your answers to it.`,
       ]
 

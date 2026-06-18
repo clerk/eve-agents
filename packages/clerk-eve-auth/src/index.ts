@@ -2,31 +2,6 @@ import { createClerkClient } from '@clerk/backend'
 import type { ClerkClient, ClerkOptions } from '@clerk/backend'
 import type { AuthFn } from 'eve/channels/auth'
 
-// The agents.json graph shape, served by the dashboard and built by the
-// `eve-agents` CLI. Re-exported here so both get the types from the package
-// root, along with the Clerk machine/scope helpers the CLI builds on.
-export type {
-  Agent,
-  AgentGraph,
-  AgentModel,
-  ToolInfo,
-  RemoteAgentRef,
-} from '../utils/agents'
-export type { AgentLike, PendingConnection } from '../utils/connections'
-export {
-  managedScopesById,
-  pendingFromAgents,
-  pendingFromProjects,
-} from '../utils/connections'
-export type { ManagedMachine } from '../utils/machines'
-export {
-  linkMachineScopes,
-  listManagedMachines,
-  MACHINE_PREFIX,
-  machineName,
-  revokeMachineTokens,
-} from '../utils/machines'
-
 /**
  * An eve route-auth `AuthFn` that verifies Clerk callers — session tokens, API
  * keys, M2M tokens, and OAuth tokens — and maps them to an eve principal.

@@ -16,23 +16,27 @@
 
 </div>
 
-A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples).
+A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples), through one small custom auth connector.
 
 It covers three patterns:
 
-- **Authorizing agent endpoints.** An eve channel `AuthFn` that verifies Clerk session tokens, API keys, M2M tokens, and OAuth tokens, then maps each to an eve principal.
+- **Authorizing agent endpoints.** A `clerkAuth()` channel `AuthFn` that verifies Clerk session tokens, API keys, M2M tokens, and OAuth tokens, then maps each to an eve principal.
+- **M2M auth between agents.** Minting short-lived Clerk M2M tokens so one agent can securely call another.
 - **Prefilling dynamic instructions.** Reading the authenticated caller off the session to personalize the agent's instructions per request.
-- **M2M auth between agents.** Minting short-lived Clerk M2M tokens to authorize communication between agents and remotely hosted dynamic agents.
+
+The dashboard's chat has a flow selector so you can call the agent as a signed-in user, as an API key, or unauthenticated, and watch each behave differently.
+
+> [!NOTE]
+> This branch wires the Clerk machines **by hand** to keep things simple. The [`m2m-sync`](https://github.com/clerk/eve-agents-with-clerk/tree/m2m-sync) branch automates the same setup with a CLI and an agent-graph dashboard.
 
 ## Apps and packages
 
 | Workspace | Description |
 | --- | --- |
-| [`apps/dashboard`](apps/dashboard) | Next.js app (port 3000). Clerk-authenticated chat UI for the agents, and an agent graph view that reads `agents.json`, surfaces unlinked agent connections, and links their Clerk machines in one click. |
-| [`apps/main-agent`](apps/main-agent) | Primary eve agent (port 3001). Its channel accepts Clerk session/API key/M2M/OAuth callers, its instructions are personalized from the caller's auth context, and it delegates project tasks to the project agent over M2M. |
+| [`apps/dashboard`](apps/dashboard) | Next.js app (port 3000). Clerk-authenticated chat UI with a flow selector to call the agent as a session user, an API key, or unauthenticated. |
+| [`apps/main-agent`](apps/main-agent) | Primary eve agent (port 3001). Its channel accepts Clerk session/API key/M2M/OAuth callers, personalizes instructions from the caller's auth, and delegates project tasks to the project agent over M2M. |
 | [`apps/project-agent`](apps/project-agent) | Subagent (port 3002). Reachable machine-to-machine only, so inbound callers must present a scoped Clerk M2M token. Exposes a `manage_project` tool. |
-| [`packages/clerk-eve-auth`](packages/clerk-eve-auth) | `@clerk/eve-auth`. The `clerkAuth()` channel authenticator, the `clerkM2MToken()` outbound-token resolver, and the Clerk machine/scope helpers the CLI builds on. |
-| [`packages/eve-agents`](packages/eve-agents) | `eve-agents` CLI. `eve-agents dev` / `generate` / `link` — provisions a Clerk machine per agent, writes the `agents.json` graph, and links agent-to-agent machine scopes. |
+| [`packages/clerk-eve-auth`](packages/clerk-eve-auth) | `@clerk/eve-auth`. The `clerkAuth()` channel authenticator and the `clerkM2MToken()` outbound-token resolver. |
 
 ## Getting started
 
@@ -48,34 +52,25 @@ It covers three patterns:
 bun install
 ```
 
-Copy the env files for each agent and fill in your Clerk and AI Gateway keys:
+Copy the env files for each agent:
 
 ```bash
 cp apps/main-agent/.env.example apps/main-agent/.env.local
 cp apps/project-agent/.env.example apps/project-agent/.env.local
 ```
 
-Leave `CLERK_MACHINE_SECRET_KEY` blank. `eve-agents dev` provisions a Clerk machine per agent and writes the secret back for you.
+Create the Clerk machines by hand in the [Clerk dashboard](https://dashboard.clerk.com) (Machines):
 
-With `CLERK_SECRET_KEY` set at the repo root, start the machine sync:
+1. Create a **machine for each agent** (e.g. `main-agent` and `project-agent`). Copy each machine's secret key (`ak_...`) into that agent's `.env.local` as `CLERK_MACHINE_SECRET_KEY`.
+2. **Scope the two machines to each other** (main-agent → project-agent and project-agent → main-agent). M2M is rejected without this scope.
 
-```bash
-bun run agents:dev
-```
-
-It creates a machine (`eve:<name>-agent`) for every agent under `apps/*`, writes each machine secret to its `.env.local`, keeps `apps/dashboard/agents.json` in sync, and reports any agent-to-agent connections that are missing Clerk machine scopes. Resolve them all at once (in another terminal):
-
-```bash
-bun run agents:link
-```
-
-Then start the dashboard:
+Fill in `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, and `AI_GATEWAY_API_KEY` in each `.env.local`, then start everything:
 
 ```bash
 bun run dev   # dashboard on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000), sign in, and chat with the main agent. Ask it to archive or restore a project to watch it delegate tasks to remote agents w/ M2M.
+`bun run dev` boots the dashboard, which starts the main agent (via `withEve`) and the project agent (via Turbo). Open [http://localhost:3000](http://localhost:3000), sign in, and chat. Ask it to archive or restore a project to watch it delegate to the project agent over M2M.
 
 ## How it works
 
@@ -88,13 +83,12 @@ Each agent's eve channel composes a list of authenticators. [`clerkAuth()`](pack
 export default eveChannel({
   auth: [
     clerkAuth(),   // session tokens, API keys, M2M, OAuth
-    localDev(),    // open on localhost for `eve dev` and local subagent calls
     vercelOidc(),  // deployment-to-deployment trust
   ],
 })
 ```
 
-Agents used as subagents should drop `localDev()` so they can only ever be reached with a valid, M2M token.
+There's no `localDev()`, so unauthenticated requests are rejected with a real `401` even on localhost. (The starter wraps `clerkAuth()` to strip credentials when it sees a `no-auth-demo` header, since a browser can't drop its own same-origin cookie — that powers the "Unauthenticated" flow below.)
 
 ### API key auth
 
@@ -127,20 +121,6 @@ const response = await session.send({ message: 'Who am I?' })
 console.log(await response.result())
 ```
 
-`useEveAgent` takes the same `auth`, for a custom frontend pointed at an agent it doesn't host. Set `host` to that agent's origin (omit it when the agent is mounted same-origin via `withEve`, as the dashboard does):
-
-```ts
-const agent = useEveAgent({
-  host: 'http://localhost:3000', // the standalone agent, not this app's origin
-  auth: { bearer: apiKey },
-})
-```
-
-> [!IMPORTANT]
-> API keys belong on the server, so prefer curl or the SDK over the browser.
-
-When using `useEveAgent` on a frontend secured by Clerk, it runs same-origin and the agent trusts the signed-in Clerk session, so no key is needed there. Locally, `localDev()` still admits tokenless localhost calls, so the key is what attaches a user identity to the request.
-
 ### M2M auth between agents
 
 The main agent declares the project agent as a remote subagent and signs the outbound call with [`clerkM2MToken()`](packages/clerk-eve-auth/src/index.ts), which mints a short-lived token from the agent's machine secret key.
@@ -154,37 +134,16 @@ export default defineRemoteAgent({
 })
 ```
 
-The token is scope-checked on the other side: the main agent's machine must be scoped to the project agent's machine in Clerk, exactly the scope `eve-agents link` (or the dashboard) creates.
-
-### Sharing user info in `clientContext`
-
-`useEveAgent`'s `prepareSend` runs before every turn, so the chat UI can attach `clientContext` straight from Clerk's client hooks. eve injects it as context for that turn's model call only, so it personalizes the response without landing in durable session history.
-
-```ts
-// apps/dashboard/src/components/chat/chat.tsx
-const { user } = useUser()
-const { orgId } = useAuth()
-
-const agent = useEveAgent({
-  prepareSend: input => ({
-    ...input,
-    clientContext: {
-      user: user?.fullName ?? null,
-      orgId: orgId ?? null,
-    },
-  }),
-})
-```
+The token is scope-checked on the other side: the main agent's machine must be scoped to the project agent's machine in Clerk, which is the scope you created during setup.
 
 ### Prefilling dynamic instructions
 
-Whoever the caller is (a session user, an API key's user, or a calling machine), the authenticated principal is available on the session, so the agent's instructions can be built per request from auth context (plan, principal type, name).
+Whoever the caller is (a session user, an API key's user, or a calling machine), the authenticated principal is available on the session, so the agent's instructions are built per request from auth context, including which token type authenticated the call.
 
 ```ts
 // apps/main-agent/agent/instructions.ts
 'session.started': (_event, ctx) => {
   const auth = ctx.session.auth.current
-  const plan = auth?.attributes.plan ?? 'free'
   const sections = [/* … */]
 
   if (auth?.principalType === 'user' && auth.attributes.name) {
@@ -194,15 +153,13 @@ Whoever the caller is (a session user, an API key's user, or a calling machine),
 }
 ```
 
-### Syncing agents with Clerk machines
+### Testing the auth flows
 
-M2M only works if every agent has a Clerk machine and the right scopes exist between them. The [`eve-agents`](packages/eve-agents) CLI keeps that in lockstep with the code, with three subcommands:
+The chat header has a dropdown that switches how the request authenticates:
 
-- **`eve-agents dev`** watches `apps/*` and reconciles a Clerk machine (`eve:<name>-agent`) for every primary and remote agent, writing each machine secret back to its `.env.local`. It also regenerates `agents.json` on each change. It deletes machines that no longer back an agent, and warns about connections that need linking. 
-- **`eve-agents generate`** scans the same agents and writes an `agents.json` graph (agents, tools, models, machine ids, and remote-agent edges) for the dashboard to serve. Use `--out <dir>` to choose where it lands.
-- **`eve-agents link`** creates the bidirectional machine scopes for every pending connection, the same action as the dashboard's **Link** button.
-
-It builds on the Clerk machine/scope helpers exported from `@clerk/eve-auth`, so the same logic backs both the CLI and the dashboard.
+- **Session** — your signed-in Clerk session (the cookie). The dashboard also attaches `clientContext` (route, name, org) on this flow only.
+- **API key** — sends the key from the input's settings dialog as a bearer token; the agent runs as that key's user.
+- **Unauthenticated** — sends the `no-auth-demo` header so the agent strips credentials and returns a `401`.
 
 ## Commands
 
@@ -210,57 +167,32 @@ Run from the repo root.
 
 | Command | Description |
 | --- | --- |
-| `bun run dev` | Start the dashboard (port 3000). |
-| `bun run dev:agent` | Start the main agent TUI (port 3001). |
-| `bun run agents:dev` | Watch `apps/*`, keep Clerk machines and `apps/dashboard/agents.json` in sync. |
-| `bun run agents:link` | Create machine scopes for all pending agent connections. |
-| `bun run agents:json` | Write the agent graph to `apps/dashboard/agents.json` (one-off). |
+| `bun run dev` | Start the dashboard + both agents (port 3000). |
+| `bun run dev:agent` | Start the main agent TUI on its own (port 3001). |
 | `bun run build` | Build every app and package via Turbo. |
 | `bun run typecheck` | Typecheck the whole monorepo. |
 | `bun run lint` | Lint with Biome. |
 | `bun run format` | Format with Biome. |
 
-The agents also expose per-app eve scripts (`eve:link`, `eve:deploy`, `eve:info`). Run them with `bun run --filter=main-agent <script>`.
+The agents also expose per-app eve scripts (`eve:deploy`, `eve:info`). Run them with `bun run --filter=main-agent <script>`.
 
 ## Deploying to production
 
-The dashboard bundles the main-agent via `withEve` ([next.config.ts](apps/dashboard/next.config.ts)), so deploying the dashboard ships the main-agent with it, running on the same domain. The `project-agent` is a separate deployment. Deploy it first to get its URL.
+The dashboard runs the main-agent via `withEve` ([next.config.ts](apps/dashboard/next.config.ts)) as a co-located service, so deploying the dashboard ships the main agent with it. The `project-agent` is a separate deployment. Deploy it first to get its URL.
 
-Everything below assumes one Clerk instance across all deployments (the starter uses your development keys).
+Set these on each deployment (one Clerk instance across all of them):
 
-### 1. Deploy the project-agent
-
-Deploy it on Vercel through Turbo or run:
-`bun run --filter project-agent eve:deploy`
-
-Note its URL, and set:
-
-| Variable | Value |
-| --- | --- |
-| `CLERK_SECRET_KEY` | Clerk instance secret key (`sk_...`). |
-| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key (`pk_...`). |
-| `CLERK_MACHINE_SECRET_KEY` | The **project-agent's** machine secret (`ak_...`, from `apps/project-agent/.env.local`). |
-| `AI_GATEWAY_API_KEY` | AI Gateway (or provider) key for its model. |
-
-### 2. Deploy the dashboard (Vercel)
-
-Deploy `apps/dashboard` as a standard Next.js app. Vercel builds it through Turbo, which runs `eve-agents generate` first to produce `agents.json`.
-
-Set the following variables:
-
-| Variable | Value |
-| --- | --- |
-| `CLERK_SECRET_KEY` | Clerk instance secret key (`sk_...`). |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key (`pk_...`). |
-| `CLERK_MACHINE_SECRET_KEY` | The **main-agent's** machine secret (`ak_...`, from `apps/main-agent/.env.local`). Used for M2M with sub agents |
-| `AI_GATEWAY_API_KEY` | AI Gateway (or provider) key for the main-agent's model. |
-| `PROJECT_AGENT_URL` | The project-agent's deployed URL from step 1. |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL`, `*_FALLBACK_REDIRECT_URL` | Sign-in/up routes (see `apps/dashboard/.env.example`). |
-
-After deploying, link the machines so the M2M call is authorized: `bun run agents:link` against the same Clerk instance (or do it through the dashboard app).
+| | Dashboard (+ main-agent) | project-agent |
+| --- | --- | --- |
+| `CLERK_SECRET_KEY` | ✓ | ✓ |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | ✓ | — |
+| `CLERK_PUBLISHABLE_KEY` | — | ✓ |
+| `CLERK_MACHINE_SECRET_KEY` | main-agent's machine secret | project-agent's machine secret |
+| `AI_GATEWAY_API_KEY` | ✓ | ✓ |
+| `PROJECT_AGENT_URL` | the deployed project-agent URL | — |
 
 > [!TIP]
-> The dashboard runs main-agent via `withEve`, so its Vercel project needs **all of main-agent's variables**, not just the dashboard's own Clerk keys. Copy all variables from `apps/main-agent/.env.local` (`CLERK_MACHINE_SECRET_KEY`, `AI_GATEWAY_API_KEY`, `PROJECT_AGENT_URL`) into the dashboard env.
+> The dashboard's `CLERK_MACHINE_SECRET_KEY` is **main-agent's** (it runs main-agent via `withEve`). Use main-agent's `.env.local` value. Make sure the two machines are scoped to each other in Clerk, same as local.
 
 ## Support
 

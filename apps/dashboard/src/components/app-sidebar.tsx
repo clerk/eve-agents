@@ -1,7 +1,7 @@
 'use client'
 
 import { UserButton, useUser, useClerk } from '@clerk/nextjs'
-import { BotIcon, MessagesSquareIcon, KeyRoundIcon } from 'lucide-react'
+import { MessagesSquareIcon, KeyRoundIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -17,10 +17,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
-const items = [
-  { title: 'Agents', href: '/', icon: BotIcon },
-  { title: 'Chat', href: '/chat', icon: MessagesSquareIcon },
-]
+const items = [{ title: 'Chat', href: '/', icon: MessagesSquareIcon }]
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()

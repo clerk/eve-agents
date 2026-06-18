@@ -4,14 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build:agents": "eve-agents generate --apps ../../apps --out .",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
-    "@clerk/eve-auth": "workspace:*",
     "@clerk/nextjs": "^7.4.2",
     "@streamdown/cjk": "^1.0.3",
     "@streamdown/code": "^1.1.1",
@@ -40,7 +38,6 @@
   "devDependencies": {
     "@clerk/types": "^4.101.20",
     "@tailwindcss/postcss": "^4",
-    "eve-agents": "workspace:*",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

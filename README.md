@@ -198,7 +198,7 @@ Whoever the caller is (a session user, an API key's user, or a calling machine),
 
 M2M only works if every agent has a Clerk machine and the right scopes exist between them. The [`eve-agents`](packages/eve-agents) CLI keeps that in lockstep with the code, with three subcommands:
 
-- **`eve-agents dev`** watches `apps/*` and reconciles a Clerk machine (`eve:<name>-agent`) for every primary and remote agent, writing each machine secret back to its `.env.local`. It also regenerates `agents.json` on each change. It deletes machines that no longer back an agent, and warns about connections that need linking.
+- **`eve-agents dev`** watches `apps/*` and reconciles a Clerk machine (`eve:<name>-agent`) for every primary and remote agent, writing each machine secret back to its `.env.local`. It also regenerates `agents.json` on each change. It deletes machines that no longer back an agent, and warns about connections that need linking. 
 - **`eve-agents generate`** scans the same agents and writes an `agents.json` graph (agents, tools, models, machine ids, and remote-agent edges) for the dashboard to serve. Use `--out <dir>` to choose where it lands.
 - **`eve-agents link`** creates the bidirectional machine scopes for every pending connection, the same action as the dashboard's **Link** button.
 
@@ -221,6 +221,46 @@ Run from the repo root.
 | `bun run format` | Format with Biome. |
 
 The agents also expose per-app eve scripts (`eve:link`, `eve:deploy`, `eve:info`). Run them with `bun run --filter=main-agent <script>`.
+
+## Deploying to production
+
+The dashboard bundles the main-agent via `withEve` ([next.config.ts](apps/dashboard/next.config.ts)), so deploying the dashboard ships the main-agent with it, running on the same domain. The `project-agent` is a separate deployment. Deploy it first to get its URL.
+
+Everything below assumes one Clerk instance across all deployments (the starter uses your development keys).
+
+### 1. Deploy the project-agent
+
+Deploy it on Vercel through Turbo or run:
+`bun run --filter project-agent eve:deploy`
+
+Note its URL, and set:
+
+| Variable | Value |
+| --- | --- |
+| `CLERK_SECRET_KEY` | Clerk instance secret key (`sk_...`). |
+| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key (`pk_...`). |
+| `CLERK_MACHINE_SECRET_KEY` | The **project-agent's** machine secret (`ak_...`, from `apps/project-agent/.env.local`). |
+| `AI_GATEWAY_API_KEY` | AI Gateway (or provider) key for its model. |
+
+### 2. Deploy the dashboard (Vercel)
+
+Deploy `apps/dashboard` as a standard Next.js app. Vercel builds it through Turbo, which runs `eve-agents generate` first to produce `agents.json`.
+
+Set the following variables:
+
+| Variable | Value |
+| --- | --- |
+| `CLERK_SECRET_KEY` | Clerk instance secret key (`sk_...`). |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key (`pk_...`). |
+| `CLERK_MACHINE_SECRET_KEY` | The **main-agent's** machine secret (`ak_...`, from `apps/main-agent/.env.local`). Used for M2M with sub agents |
+| `AI_GATEWAY_API_KEY` | AI Gateway (or provider) key for the main-agent's model. |
+| `PROJECT_AGENT_URL` | The project-agent's deployed URL from step 1. |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL`, `*_FALLBACK_REDIRECT_URL` | Sign-in/up routes (see `apps/dashboard/.env.example`). |
+
+After deploying, link the machines so the M2M call is authorized: `bun run agents:link` against the same Clerk instance (or do it through the dashboard app).
+
+> [!TIP]
+> The dashboard runs main-agent via `withEve`, so its Vercel project needs **all of main-agent's variables**, not just the dashboard's own Clerk keys. Copy all variables from `apps/main-agent/.env.local` (`CLERK_MACHINE_SECRET_KEY`, `AI_GATEWAY_API_KEY`, `PROJECT_AGENT_URL`) into the dashboard env.
 
 ## Support
 

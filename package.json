@@ -13,7 +13,7 @@
     "dev": "turbo run dev --filter=dashboard",
     "dev:agent": "turbo run dev --filter=main-agent",
     "eve:dev:headless": "turbo run dev:headless",
-    "agents:dev": "eve-agents dev --out apps/dashboard",
+    "agents:dev": "eve-agents dev --out apps/dashboard --host apps/dashboard=main-agent",
     "agents:json": "eve-agents generate --out apps/dashboard",
     "agents:link": "eve-agents link",
     "typecheck": "turbo typecheck",

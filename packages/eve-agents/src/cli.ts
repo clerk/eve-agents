@@ -6,6 +6,7 @@ import { createClerkClient } from '@clerk/backend'
 import {
   linkMachineScopes,
   listManagedMachines,
+  machineName,
   revokeMachineTokens,
 } from '@clerk/eve-auth'
 import { Command } from 'commander'
@@ -15,6 +16,24 @@ import { syncMachines } from './sync'
 
 const log = (message: string) => console.log(`[eve-agents] ${message}`)
 const appsDir = () => path.join(process.cwd(), 'apps')
+
+// Parse `--host <dir>=<agent>` mappings: an app that hosts an agent and needs
+// that agent's machine secret mirrored into its env (e.g. a withEve Next app).
+function parseHosts(mappings: string[]): { dir: string; machine: string }[] {
+  return mappings.flatMap(mapping => {
+    const eq = mapping.indexOf('=')
+    if (eq < 1 || eq === mapping.length - 1) {
+      console.error(`[eve-agents] ignoring --host "${mapping}": expected <dir>=<agent>`)
+      return []
+    }
+    return [
+      {
+        dir: path.resolve(process.cwd(), mapping.slice(0, eq)),
+        machine: machineName(mapping.slice(eq + 1)),
+      },
+    ]
+  })
+}
 
 function getClerk() {
   const secretKey = process.env.CLERK_SECRET_KEY
@@ -34,10 +53,15 @@ program
   .command('dev')
   .description('Watch apps/* and keep Clerk machines + agents.json in sync (warns about unlinked agents)')
   .option('-o, --out <dir>', 'agents.json output directory, relative to cwd', '.')
-  .action((opts: { out: string }) => {
+  .option(
+    '--host <mapping...>',
+    "mirror an agent's machine secret into a host app: <dir>=<agent>"
+  )
+  .action((opts: { out: string; host?: string[] }) => {
     const clerk = getClerk()
     const dir = appsDir()
     const outFile = path.resolve(process.cwd(), opts.out, 'agents.json')
+    const hosts = parseHosts(opts.host ?? [])
 
     let running = false
     let queued = false
@@ -51,7 +75,7 @@ program
         // One machine list shared across the pass: syncMachines keeps it current
         // (creates/deletes), then buildAgents reuses it instead of re-listing.
         const existing = await listManagedMachines(clerk)
-        await syncMachines({ clerk, appsDir: dir, log, existing })
+        await syncMachines({ clerk, appsDir: dir, log, existing, hosts })
         // Keep agents.json fresh as agents/scopes change.
         const graph = await buildAgents({ clerk, appsDir: dir, existing })
         await writeFile(outFile, `${JSON.stringify(graph, null, 2)}\n`)

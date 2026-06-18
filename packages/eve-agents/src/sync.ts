@@ -21,6 +21,10 @@ export type SyncOptions = {
   // kept current in place (created machines added, deleted ones removed) so a
   // caller can pass the same map to `buildAgents` and skip a second list call.
   existing?: Map<string, ManagedMachine>
+  // Apps that host an agent (e.g. a Next app via withEve) and need that agent's
+  // CLERK_MACHINE_SECRET_KEY in their own env. Each maps an absolute app dir to
+  // the hosted agent's machine name (`eve:<name>-agent`).
+  hosts?: { dir: string; machine: string }[]
 }
 
 // One stateless reconcile pass over `appsDir`. Ensures a Clerk machine exists
@@ -75,6 +79,26 @@ export async function syncMachines(options: SyncOptions): Promise<void> {
     }
     const wrote = await upsertEnv(p.dir, MACHINE_SECRET_ENV, secret)
     if (wrote) log(`set ${MACHINE_SECRET_ENV} in ${path.relative(appsDir, wrote)}`)
+  }
+
+  // Mirror a hosted agent's secret into its host app (e.g. a withEve Next app
+  // that proxies to the agent and mints M2M tokens with the same secret). Same
+  // heal-when-missing rule as above, so a settled host gets no write.
+  for (const host of options.hosts ?? []) {
+    const m = machines.get(host.machine)
+    if (!m) {
+      log(`host has no machine "${host.machine}" to mirror`)
+      continue
+    }
+    let secret: string | undefined = m.freshSecret
+    if (!secret) {
+      if (await hasEnvKey(host.dir, MACHINE_SECRET_ENV)) continue
+      secret = (await clerk.machines.getSecretKey(m.id)).secret
+    }
+    const wrote = await upsertEnv(host.dir, MACHINE_SECRET_ENV, secret)
+    if (wrote) {
+      log(`mirrored ${host.machine} secret to ${path.relative(appsDir, wrote)}`)
+    }
   }
 
   // Delete our machines that no longer back any agent.

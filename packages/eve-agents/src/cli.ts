@@ -100,10 +100,12 @@ program
   .command('generate')
   .description('Write agents.json (the agent graph) for the dashboard to serve')
   .option('-o, --out <dir>', 'output directory, relative to cwd', '.')
-  .action(async (opts: { out: string }) => {
+  .option('--apps <dir>', 'directory holding the agent apps, relative to cwd', 'apps')
+  .action(async (opts: { out: string; apps: string }) => {
     const clerk = getClerk()
     const outFile = path.resolve(process.cwd(), opts.out, 'agents.json')
-    const graph = await buildAgents({ clerk, appsDir: appsDir() })
+    const appsPath = path.resolve(process.cwd(), opts.apps)
+    const graph = await buildAgents({ clerk, appsDir: appsPath })
     await writeFile(outFile, `${JSON.stringify(graph, null, 2)}\n`)
     log(
       `wrote ${graph.agents.length} agent(s)` +

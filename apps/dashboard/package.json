@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "build:agents": "eve-agents generate --apps ../../apps --out .",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@clerk/types": "^4.101.20",
     "@tailwindcss/postcss": "^4",
+    "eve-agents": "workspace:*",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

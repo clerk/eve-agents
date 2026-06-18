@@ -1,6 +1,14 @@
 {
- "extends": ["//"],
+  "extends": ["//"],
   "tasks": {
+    "build:agents": {
+      "dependsOn": ["main-agent#build", "project-agent#build"],
+      "outputs": ["agents.json"]
+    },
+    "build": {
+      "dependsOn": ["^build", "build:agents"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
     "dev": {
       "with": ["project-agent#dev:headless"],
       "persistent": true,

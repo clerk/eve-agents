@@ -11,19 +11,19 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo run dev --filter=dashboard",
-    "dev:main": "turbo run dev --filter=main-agent",
-    "dev:project": "turbo run dev --filter=project-agent",
+    "dev:agent": "turbo run dev --filter=main-agent",
     "eve:dev:headless": "turbo run dev:headless",
-    "agents:dev": "agents-dev",
-    "agents:json": "agents-json --out apps/dashboard",
+    "agents:dev": "eve-agents dev --out apps/dashboard",
+    "agents:json": "eve-agents generate --out apps/dashboard",
+    "agents:link": "eve-agents link",
     "typecheck": "turbo typecheck",
     "lint": "biome check",
     "format": "biome format --write"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
-    "@clerk/eve-auth": "workspace:*",
     "@types/node": "24.x",
+    "eve-agents": "workspace:*",
     "@typescript/native-preview": "7.0.0-dev.20260523.1",
     "turbo": "^2.3.0"
   },

@@ -1,6 +1,12 @@
 import path from 'node:path'
+import type { ClerkClient } from '@clerk/backend'
+import {
+  listManagedMachines,
+  type ManagedMachine,
+  managedScopesById,
+  pendingFromProjects,
+} from '@clerk/eve-auth'
 import { hasEnvKey, upsertEnv } from './env'
-import { type ClerkClient, listManagedMachines, MACHINE_PREFIX } from './machines'
 import { scanProjects } from './projects'
 
 const DEFAULT_TOKEN_TTL = 300
@@ -11,20 +17,22 @@ export type SyncOptions = {
   appsDir: string
   // Progress sink; defaults to no-op so non-interactive callers stay quiet.
   log?: (message: string) => void
+  // A pre-fetched managed-machine list to reuse instead of calling Clerk. It is
+  // kept current in place (created machines added, deleted ones removed) so a
+  // caller can pass the same map to `buildAgents` and skip a second list call.
+  existing?: Map<string, ManagedMachine>
 }
 
 // One stateless reconcile pass over `appsDir`. Ensures a Clerk machine exists
-// for every primary + remote agent (named `eve:<name>-agent`), scopes each
-// primary and its remotes to one another both ways, writes each project's
-// machine secret to its env, and deletes any `eve:`-prefixed machine that no
-// longer backs an agent. Safe to run from a watcher or a one-shot command.
-export async function syncMachines({
-  clerk,
-  appsDir,
-  log = () => {},
-}: SyncOptions): Promise<void> {
+// for every primary + remote agent (named `eve:<name>-agent`), writes each
+// project's machine secret to its env, and deletes any `eve:`-prefixed machine
+// that no longer backs an agent. It does NOT create scopes — it detects the
+// agent/subagent links that aren't scoped yet and warns to run `eve-agents
+// link`. Safe to run from a watcher or a one-shot command.
+export async function syncMachines(options: SyncOptions): Promise<void> {
+  const { clerk, appsDir, log = () => {} } = options
   const projects = await scanProjects(appsDir)
-  const existing = await listManagedMachines(clerk)
+  const existing = options.existing ?? (await listManagedMachines(clerk))
 
   // Desired machines = every primary + every remote, by normalized name.
   const desired = new Set<string>()
@@ -47,41 +55,9 @@ export async function syncMachines({
         defaultTokenTtl: DEFAULT_TOKEN_TTL,
       })
       machines.set(name, { id: created.id, freshSecret: created.secretKey as string })
+      // Keep `existing` current so a shared map reflects the new machine.
+      existing.set(name, { id: created.id, scopes: new Set() })
       log(`created machine "${name}"`)
-    }
-  }
-  const idOf = (name: string) => machines.get(name)?.id
-
-  // Sync scopes: primary <-> each remote, both directions.
-  const desiredScopes = new Set<string>() // `${fromName}->${toName}`
-  for (const p of projects) {
-    for (const r of p.remotes) {
-      desiredScopes.add(`${p.machine}->${r}`)
-      desiredScopes.add(`${r}->${p.machine}`)
-    }
-  }
-  for (const pair of desiredScopes) {
-    const [from, to] = pair.split('->')
-    const fromId = idOf(from)
-    const toId = idOf(to)
-    if (!fromId || !toId) continue
-    if (!existing.get(from)?.scopes.has(to)) {
-      await clerk.machines.createScope(fromId, toId)
-      log(`scoped ${from} -> ${to}`)
-    }
-  }
-  // Remove scopes that exist on our machines but are no longer desired.
-  for (const [name, m] of existing) {
-    const fromId = idOf(name) ?? m.id
-    for (const scopedName of m.scopes) {
-      if (!scopedName.startsWith(MACHINE_PREFIX)) continue
-      if (!desiredScopes.has(`${name}->${scopedName}`)) {
-        const toId = idOf(scopedName) ?? existing.get(scopedName)?.id
-        if (toId) {
-          await clerk.machines.deleteScope(fromId, toId).catch(() => {})
-          log(`unscoped ${name} -> ${scopedName}`)
-        }
-      }
     }
   }
 
@@ -105,7 +81,23 @@ export async function syncMachines({
   for (const [name, m] of existing) {
     if (!desired.has(name)) {
       await clerk.machines.delete(m.id).catch(() => {})
+      existing.delete(name)
       log(`deleted machine "${name}"`)
     }
+  }
+
+  // Detect agent/subagent links that aren't scoped in Clerk yet, and warn.
+  // We don't create them here — run `eve-agents link` (or use the dashboard).
+  const machineIdByName = new Map([...machines].map(([name, m]) => [name, m.id]))
+  const pending = pendingFromProjects(
+    projects,
+    machineIdByName,
+    managedScopesById(existing)
+  )
+  if (pending.length > 0) {
+    log(
+      `${pending.length} agent connection(s) need linking — run \`eve-agents link\` to resolve:`
+    )
+    for (const c of pending) log(`  ${c.agents[0]} <-> ${c.agents[1]}`)
   }
 }

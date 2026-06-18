@@ -13,6 +13,40 @@ export function machineName(agentName: string): string {
   return `${MACHINE_PREFIX}${base}`
 }
 
+// Link two machines bidirectionally (each scoped to the other). Errors — e.g.
+// an already-existing scope — are ignored so this is safe to call repeatedly.
+export async function linkMachineScopes(
+  clerk: ClerkClient,
+  machineIdA: string,
+  machineIdB: string
+): Promise<void> {
+  await clerk.machines.createScope(machineIdA, machineIdB).catch(() => {})
+  await clerk.machines.createScope(machineIdB, machineIdA).catch(() => {})
+}
+
+// Revoke every active M2M token issued by the given machines. Call after a
+// scope change so it takes effect immediately: outstanding tokens snapshot
+// their scopes at mint time and Clerk reuses them within their TTL, so without
+// revocation a relink/unlink only applies once those tokens age out. Returns
+// the number of tokens revoked. Best-effort: individual failures are ignored.
+export async function revokeMachineTokens(
+  clerk: ClerkClient,
+  machineIds: string[]
+): Promise<number> {
+  let revoked = 0
+  for (const subject of machineIds) {
+    // The M2M list endpoint caps limit at 100. Token reuse keeps the active set
+    // small, so a single page is plenty here.
+    const res = await clerk.m2m.list({ subject, limit: 100 }).catch(() => null)
+    if (!res) continue
+    for (const token of res.data) {
+      await clerk.m2m.revokeToken({ m2mTokenId: token.id }).catch(() => {})
+      revoked++
+    }
+  }
+  return revoked
+}
+
 export type ManagedMachine = { id: string; scopes: Set<string> }
 
 // List only the `eve:`-prefixed machines, keyed by name, with the set of

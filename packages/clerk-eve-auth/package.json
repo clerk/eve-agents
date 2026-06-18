@@ -9,10 +9,6 @@
       "default": "./src/index.ts"
     }
   },
-  "bin": {
-    "agents-dev": "./commands/watch.ts",
-    "agents-json": "./commands/generate.ts"
-  },
   "scripts": {
     "typecheck": "tsgo"
   },

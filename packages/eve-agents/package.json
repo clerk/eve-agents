@@ -1,0 +1,17 @@
+{
+  "name": "eve-agents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "eve-agents": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsgo"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.7.1",
+    "@clerk/eve-auth": "workspace:*",
+    "commander": "^13.0.0"
+  }
+}

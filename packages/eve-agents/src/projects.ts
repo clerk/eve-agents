@@ -1,12 +1,12 @@
 import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
-import { machineName } from './machines'
+import { machineName } from '@clerk/eve-auth'
 
 // An eve agent project is any `apps/*` dir with a compiled manifest.
 export const MANIFEST_REL = '.eve/compile/compiled-agent-manifest.json'
 
 // The slice of the compiled manifest we read. The compiler emits much more;
-// these are the fields the watcher and the agents.json generator consume.
+// these are the fields the reconcile and the agents.json generator consume.
 export type CompiledManifest = {
   config?: {
     name?: string

@@ -1,9 +1,10 @@
 'use client'
 
-import { useUser, useAuth } from '@clerk/nextjs'
+import { useAuth, useUser } from '@clerk/nextjs'
 import type { UIMessage } from 'ai'
 import { useEveAgent } from 'eve/react'
 import { usePathname } from 'next/navigation'
+import * as React from 'react'
 import { toast } from 'sonner'
 import {
   Conversation,
@@ -15,7 +16,10 @@ import {
   Suggestions,
 } from '@/components/ai-elements/suggestion'
 import { Spinner } from '@/components/kibo-ui/spinner'
+import { ApiKeyProvider, useApiKey } from './api-key'
 import { ChatInput } from './chat-input'
+import { FlowSelect } from './flow-select'
+import { type FlowId, flowOptions } from './flows'
 import { Messages } from './messages'
 
 const SUGGESTIONS = [
@@ -25,26 +29,56 @@ const SUGGESTIONS = [
 ]
 
 export function Chat() {
+  return (
+    <ApiKeyProvider>
+      <ChatInner />
+    </ApiKeyProvider>
+  )
+}
+
+function ChatInner() {
+  const [flow, setFlow] = React.useState<FlowId>('session')
+  const { apiKey } = useApiKey()
+  // Remount on flow (or api-key) change so each session starts clean with the
+  // right auth — useEveAgent reads its options at init.
+  const sessionKey = flow === 'api-key' ? `api-key:${apiKey}` : flow
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-center pb-4">
+        <FlowSelect value={flow} onChange={setFlow} />
+      </div>
+      <ChatSession key={sessionKey} flow={flow} apiKey={apiKey} />
+    </div>
+  )
+}
+
+function ChatSession({ flow, apiKey }: { flow: FlowId; apiKey: string }) {
   const pathname = usePathname()
   const { user } = useUser()
   const { orgId } = useAuth()
-  // No `host`: withEve mounts the main-agent runtime same-origin, so the hook's
-  // default (/eve/v1/*) is correct. `prepareSend` attaches ephemeral page
-  // context to every turn — the current route and signed-in user — without it
-  // landing in durable session history.
+  const { auth, headers } = flowOptions(flow, apiKey)
+
+  // `auth`/`headers` select the flow (api-key bearer, or the `no-auth-demo`
+  // header that makes the agent strip credentials server-side). `clientContext`
+  // is the dashboard session's identity, so only attach it on the session flow
+  // — it would be misleading to send it as an API key or unauthenticated caller.
   const agent = useEveAgent({
-    prepareSend: input => ({
-      ...input,
-      clientContext: {
-        route: pathname,
-        user: user?.fullName ?? null,
-        orgId: orgId ?? null,
-      },
-    }),
-    // onEvent: event => console.log(event),
+    auth,
+    headers,
+    prepareSend: input =>
+      flow === 'session'
+        ? {
+            ...input,
+            clientContext: {
+              route: pathname,
+              user: user?.fullName ?? null,
+              orgId: orgId ?? null,
+            },
+          }
+        : input,
     onError: error => toast.error(error.message),
-    onFinish: snapshot =>
-      toast.success(`Run finished (${snapshot.status})`),
+    onFinish: snapshot => toast.success(`Run finished (${snapshot.status})`),
   })
   const { status } = agent
 
@@ -59,7 +93,7 @@ export function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex min-h-0 flex-1 flex-col">
       <Conversation className="min-h-0">
         <ConversationContent>
           {/* EveMessage follows the AI SDK UIMessage convention. */}
@@ -68,10 +102,7 @@ export function Chat() {
             onAnswer={answer}
           />
           {status === 'streaming' && (
-            <Spinner
-              variant="ellipsis"
-              className="text-muted-foreground"
-            />
+            <Spinner variant="ellipsis" className="text-muted-foreground" />
           )}
         </ConversationContent>
         <ConversationScrollButton />

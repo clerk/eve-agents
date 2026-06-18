@@ -3,10 +3,13 @@
 import { useState } from 'react'
 import {
   PromptInput,
+  PromptInputFooter,
   type PromptInputMessage,
   PromptInputSubmit,
   PromptInputTextarea,
+  PromptInputTools,
 } from '@/components/ai-elements/prompt-input'
+import { ApiKeySettings } from './api-key-settings'
 
 export function ChatInput({
   onSend,
@@ -34,20 +37,19 @@ export function ChatInput({
   return (
     <PromptInput
       onSubmit={handleSubmit}
-      className="mt-4 w-full max-w-2xl mx-auto relative"
+      className="mt-4 w-full max-w-2xl mx-auto"
     >
       <PromptInputTextarea
         value={input}
         placeholder="Say something..."
         onChange={e => setInput(e.currentTarget.value)}
-        className="pr-12"
       />
-      <PromptInputSubmit
-        status={status}
-        onStop={onStop}
-        disabled={disabled}
-        className="absolute bottom-1 right-1"
-      />
+      <PromptInputFooter>
+        <PromptInputTools>
+          <ApiKeySettings />
+        </PromptInputTools>
+        <PromptInputSubmit status={status} onStop={onStop} disabled={disabled} />
+      </PromptInputFooter>
     </PromptInput>
   )
 }

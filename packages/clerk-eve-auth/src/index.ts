@@ -39,8 +39,13 @@ export {
 export function clerkAuth(options: ClerkOptions = {}): AuthFn<Request> {
   const clerk = createClerkClient({
     secretKey: options.secretKey ?? process.env.CLERK_SECRET_KEY,
+    // The publishable key is public. Prefer the Next-exposed var, since the
+    // agent runs inside the dashboard's runtime (via withEve) where that's the
+    // one that's set; fall back to CLERK_PUBLISHABLE_KEY for a standalone agent.
     publishableKey:
-      options.publishableKey ?? process.env.CLERK_PUBLISHABLE_KEY,
+      options.publishableKey ??
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
+      process.env.CLERK_PUBLISHABLE_KEY,
   })
   const machineSecretKey =
     options.machineSecretKey ?? process.env.CLERK_MACHINE_SECRET_KEY

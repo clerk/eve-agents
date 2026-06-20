@@ -16,10 +16,12 @@
     "typecheck": "turbo typecheck",
     "lint": "biome check",
     "format": "biome format --write",
-    "gen:agent": "turbo gen agent"
+    "gen:agent": "turbo gen agent",
+    "demo:create-machines": "bun --env-file=apps/main-agent/.env.local run scripts/demo/create-agent-machines.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@clerk/backend": "^3.8.2",
     "@turbo/gen": "^2.3.0",
     "@types/inquirer-autocomplete-prompt": "^3.0.3",
     "@types/node": "24.x",

@@ -44,7 +44,17 @@ This repo doubles as a public [shadcn GitHub registry](https://ui.shadcn.com/doc
 bunx --bun shadcn@latest add clerk/eve-agents/auth
 ```
 
-The helper lands at `lib/clerk-auth.ts`, ready to drop into your channel's `auth: [...]` list.
+The helper lands at `lib/clerk-auth.ts`. Drop it into your channel's `auth: [...]` list:
+
+```ts
+// agent/channels/eve.ts
+import { clerkAuth } from '@/lib/clerk-auth'
+import { eveChannel } from 'eve/channels/eve'
+
+export default eveChannel({
+  auth: [clerkAuth()],
+})
+```
 
 ## Getting started
 
@@ -60,25 +70,28 @@ The helper lands at `lib/clerk-auth.ts`, ready to drop into your channel's `auth
 bun install
 ```
 
-Copy the env files for each agent:
+Copy the env files for each agent and fill in `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, and `AI_GATEWAY_API_KEY` in each:
 
 ```bash
 cp apps/main-agent/.env.example apps/main-agent/.env.local
 cp apps/project-agent/.env.example apps/project-agent/.env.local
 ```
 
-Create the Clerk machines by hand in the [Clerk dashboard](https://dashboard.clerk.com) (Machines):
+Then create the two Clerk machines and bidirectional scope in one shot:
 
-1. Create a **machine for each agent** (e.g. `main-agent` and `project-agent`). Copy each machine's secret key (`ak_...`) into that agent's `.env.local` as `CLERK_MACHINE_SECRET_KEY`.
-2. **Scope the two machines to each other** (main-agent → project-agent and project-agent → main-agent). M2M is rejected without this scope.
+```bash
+bun run demo:create-machines
+```
 
-Fill in `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, and `AI_GATEWAY_API_KEY` in each `.env.local`, then start everything:
+The script creates `main-agent` and `project-agent` machines, scopes them to each other, and prints each machine's secret key. Copy them into their respective `apps/<name>/.env.local` as `CLERK_MACHINE_SECRET_KEY` before starting the agents.
 
 ```bash
 bun run dev   # dashboard on http://localhost:3000
 ```
 
-`bun run dev` boots the dashboard, which starts the main agent (via `withEve`) and the project agent (via Turbo). Open [http://localhost:3000](http://localhost:3000), sign in, and chat. Ask it to archive or restore a project to watch it delegate to the project agent over M2M.
+`bun run dev` boots the dashboard, which starts the main agent (via `withEve`) and the project agent together (via Turborepo sidecar tasks). 
+
+Open [http://localhost:3000](http://localhost:3000), sign in, and chat. Test different auth flows from the dropdown or watch m2m auth in action by asking it to archive a project.
 
 ## How it works
 

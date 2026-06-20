@@ -95,6 +95,148 @@ Open [http://localhost:3000](http://localhost:3000), sign in, and chat. Test dif
 
 ## How it works
 
+### Configuring `clerkAuth()`
+
+`clerkAuth()` is the single helper you compose into your channel's `auth: [...]` list. Out of the box it verifies any Clerk token type, returns `null` on failure (so the chain walks to the next authenticator), and maps the caller to an eve principal.
+
+```ts
+auth: [clerkAuth()]
+```
+
+Every option below is opt-in. Combine them freely.
+
+**Restrict which token types you accept.** Anything else is treated as unauthenticated.
+
+```ts
+clerkAuth({ acceptsToken: ['session_token', 'api_key'] })
+```
+
+**Require permissions for session callers.** Each missing entry throws `ForbiddenError` (403).
+
+```ts
+clerkAuth({
+  acceptsToken: ['session_token'],
+  permissions: ['org:projects:archive'],
+})
+```
+
+**Restrict to specific org roles.** The caller's `orgRole` must be in the list; missing or non-matching throws `ForbiddenError` (403).
+
+```ts
+clerkAuth({
+  acceptsToken: ['session_token'],
+  allowedRoles: ['org:admin', 'org:billing_manager'],
+})
+```
+
+**Require scopes for API key callers.** Each missing scope throws `ForbiddenError` (403). M2M tokens don't need a matching option: Clerk's `authenticateRequest` already verifies the machine-to-machine scope using `CLERK_MACHINE_SECRET_KEY` against the caller machine's `scoped_machines`.
+
+```ts
+clerkAuth({
+  acceptsToken: ['api_key'],
+  apiKeyScopes: ['projects:write'],
+})
+```
+
+**Reject unauthenticated requests instead of falling through.** Default is `'skip'`. Set `'throw'` to short-circuit the chain with a 401.
+
+```ts
+clerkAuth({ onUnauthenticated: 'throw' })
+```
+
+**Inspect the raw Clerk request state.** `handleAuth` runs first and receives the full state Clerk produced (`isAuthenticated`, `tokenType`, `reason`, `toAuth()`). Throw to reject with a custom error; return `void` to continue.
+
+```ts
+import { UnauthenticatedError } from 'eve/channels/auth'
+
+clerkAuth({
+  handleAuth: state => {
+    if (state?.tokenType === 'session_token' && state.reason === 'token-expired') {
+      throw new UnauthenticatedError({
+        code: 'session_expired',
+        message: 'Sign in again to continue.',
+      })
+    }
+  },
+})
+```
+
+**Override the Clerk client config.** `clientOptions` is forwarded to `createClerkClient`.
+
+```ts
+clerkAuth({
+  clientOptions: {
+    secretKey: process.env.CUSTOM_CLERK_SECRET,
+    jwtKey: process.env.CLERK_JWT_KEY,
+  },
+})
+```
+
+> [!NOTE]
+> When omitted, these fields default to env vars:
+> - `secretKey` ← `CLERK_SECRET_KEY`
+> - `publishableKey` ← `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, falling back to `CLERK_PUBLISHABLE_KEY`
+> - `machineSecretKey` ← `CLERK_MACHINE_SECRET_KEY`
+
+### Principal attributes
+
+After `clerkAuth()` succeeds, eve exposes the caller as `ctx.session.auth.current`. The outer shape is the same for every token type:
+
+```ts
+{
+  authenticator: 'clerk',
+  principalType: 'user' | 'machine',
+  principalId: string,
+  subject: string,
+  attributes: { /* per token type, see below */ },
+}
+```
+
+`attributes` differs by `tokenType`:
+
+**Session token** (`principalType: 'user'`)
+
+```ts
+{
+  tokenType: 'session_token',
+  orgId?: string,                  // active organization id
+  role?: string,                   // org role, e.g. 'org:admin'
+  permissions?: readonly string[], // org permissions list
+  name?: string,                   // from sessionClaims.name
+}
+```
+
+**API key** (`principalType: 'machine'`)
+
+```ts
+{
+  tokenType: 'api_key',
+  scopes?: readonly string[], // custom scopes attached to the key
+  userId?: string,            // when scoped to a user
+  orgId?: string,             // when scoped to an org (mutually exclusive with userId)
+}
+```
+
+**M2M token** (`principalType: 'machine'`)
+
+```ts
+{
+  tokenType: 'm2m_token',
+  scopes?: readonly string[],
+}
+```
+
+**OAuth token** (`principalType: 'machine'`)
+
+```ts
+{
+  tokenType: 'oauth_token',
+  scopes?: readonly string[],
+  userId: string,                  // the user the token authorizes
+  clientId: string,                // the OAuth app's client id
+}
+```
+
 ### Authorizing agent endpoints
 
 Each agent's eve channel composes a list of authenticators. [`clerkAuth()`](packages/clerk-eve-auth/src/index.ts) verifies any Clerk token type and maps it to an eve principal; a non-Clerk token returns `null` and falls through to the next authenticator.

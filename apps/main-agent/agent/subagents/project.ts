@@ -1,4 +1,4 @@
-import { clerkM2MToken } from '@clerk/eve-auth'
+import { clerkM2MToken } from '@clerk/eve-auth/m2m'
 import { defineRemoteAgent } from 'eve'
 import { bearer } from 'eve/agents/auth'
 

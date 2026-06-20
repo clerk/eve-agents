@@ -1,19 +1,7 @@
-import { defineDynamic, defineInstructions } from 'eve/instructions'
+import { clerkInstructions } from '@clerk/eve-auth/instructions'
 
-export default defineDynamic({
-  events: {
-    'session.started': (_event, ctx) => {
-      const auth = ctx.session.auth.current
-      const sections = ['You are a helpful assistant.']
-
-      // When the caller is a signed-in user, personalize with their name.
-      if (auth?.principalType === 'user' && auth.attributes.name) {
-        sections.push(
-          `You are speaking with ${auth.attributes.name}. Address them by name when it feels natural.`
-        )
-      }
-
-      return defineInstructions({ markdown: sections.join('\n\n') })
-    },
-  },
-})
+export default clerkInstructions((auth, userInfo) => [
+  'You are a helpful assistant.',
+  userInfo &&
+    `Use the following info about the caller to personalize your response:\n${userInfo}`,
+])

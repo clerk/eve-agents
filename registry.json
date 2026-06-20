@@ -7,14 +7,24 @@
       "name": "auth",
       "type": "registry:item",
       "title": "Clerk auth for Eve agents",
-      "description": "Auth helpers for securing Eve agents with Clerk.",
+      "description": "Channel authenticator, dynamic-instructions factory, and M2M token resolver for securing Eve agents with Clerk.",
       "registryDependencies": [],
       "dependencies": ["@clerk/backend"],
       "files": [
         {
           "path": "packages/clerk-eve-auth/src/index.ts",
           "type": "registry:file",
-          "target": "~/lib/clerk-auth.ts"
+          "target": "~/lib/clerk-auth/index.ts"
+        },
+        {
+          "path": "packages/clerk-eve-auth/src/instructions.ts",
+          "type": "registry:file",
+          "target": "~/lib/clerk-auth/instructions.ts"
+        },
+        {
+          "path": "packages/clerk-eve-auth/src/m2m.ts",
+          "type": "registry:file",
+          "target": "~/lib/clerk-auth/m2m.ts"
         }
       ]
     }

@@ -77,13 +77,13 @@ cp apps/main-agent/.env.example apps/main-agent/.env.local
 cp apps/project-agent/.env.example apps/project-agent/.env.local
 ```
 
-Then create the two Clerk machines and bidirectional scope in one shot:
+Then create the two Clerk machines and the M2M scope in one shot:
 
 ```bash
 bun run demo:create-machines
 ```
 
-The script creates `main-agent` and `project-agent` machines, scopes them to each other, and prints each machine's secret key. Copy them into their respective `apps/<name>/.env.local` as `CLERK_MACHINE_SECRET_KEY` before starting the agents.
+The script creates `main-agent` and `project-agent` machines, scopes `main-agent` to `project-agent` (so main can mint M2M tokens for it), and prints each machine's secret key. Copy them into their respective `apps/<name>/.env.local` as `CLERK_MACHINE_SECRET_KEY` before starting the agents.
 
 ```bash
 bun run dev   # dashboard on http://localhost:3000
@@ -240,7 +240,7 @@ Set these on each deployment. Use credentials from your Clerk **production insta
 | `PROJECT_AGENT_URL` | the deployed project-agent URL | — |
 
 > [!TIP]
-> The dashboard runs `main-agent` via `withEve`, so its `CLERK_MACHINE_SECRET_KEY` is `main-agent`'s machine secret from your Clerk production instance. Remember to scope `main-agent` and `project-agent` to each other in both instances.
+> The dashboard runs `main-agent` via `withEve`, so its `CLERK_MACHINE_SECRET_KEY` is `main-agent`'s machine secret from your Clerk production instance. Remember to scope `main-agent` to `project-agent` in the production instance, same as you did locally.
 
 ## Support
 

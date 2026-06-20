@@ -1,6 +1,7 @@
 /**
- * Create the demo's main-agent and project-agent Clerk machines, scope them to
- * each other, and print their secret keys.
+ * Create the demo's main-agent and project-agent Clerk machines, scope
+ * main-agent to project-agent (so main can mint M2M tokens for it), and print
+ * their secret keys.
  *
  *   bun run scripts/demo/create-agent-machines.ts
  *
@@ -28,16 +29,13 @@ const [main, project] = await Promise.all([
   clerk.machines.create({ name: 'project-agent' }),
 ])
 
-await Promise.all([
-  clerk.machines.createScope(main.id, project.id),
-  clerk.machines.createScope(project.id, main.id),
-])
+await clerk.machines.createScope(main.id, project.id)
 
 const row = (label: string, value: string | undefined) =>
   `  ${label.padEnd(28)} ${value ?? '(not returned; rotate from the dashboard)'}`
 
 console.log()
-console.log('Created two Clerk machines with bi-directional scope.')
+console.log('Created two Clerk machines and scoped main-agent → project-agent.')
 console.log()
 console.log(row('main-agent id', main.id))
 console.log(row('main-agent secret', main.secretKey))

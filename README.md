@@ -197,7 +197,7 @@ See eve docs on [attaching page context](https://eve.dev/docs/guides/frontend/ov
 
 ## Generating new agents
 
-Two Turborepo generators scaffold the boilerplate.
+Bootstrap new agents and subagents with ease using Turbo generators.
 
 Scaffold a new empty eve agent under `apps/<name>/`, with the eve channel pre-wired with `clerkAuth()` and instructions enriched with Clerk user info.
 
@@ -207,7 +207,7 @@ bun run gen:agent
 
 Prompts:
 - **Agent name** — folder and package name.
-- **AI Gateway model** — autocomplete fetched live from Vercel AI Gateway.
+- **AI Gateway model** — models fetched live from Vercel AI Gateway.
 - **Dev server port** — defaults to 3003.
 
 Scaffold a remote subagent file inside an existing agent app's `subagents/` folder, optionally creating and scoping its Clerk machine in one shot.
@@ -217,7 +217,7 @@ bun run gen:subagent
 ```
 
 Prompts:
-- **Host agent app** — pick from existing agent apps (autocomplete).
+- **Parent agent app** — pick from existing agent apps in project.
 - **Subagent name** — file name and Clerk machine prefix.
 - **Remote agent URL** — defaults to http://localhost:3002.
 - **Env var name** — auto-derived from the subagent name.

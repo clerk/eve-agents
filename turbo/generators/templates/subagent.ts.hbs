@@ -1,0 +1,9 @@
+import { clerkM2MToken } from '@clerk/eve-auth'
+import { defineRemoteAgent } from 'eve'
+import { bearer } from 'eve/agents/auth'
+
+export default defineRemoteAgent({
+  url: process.env.{{urlEnv}} ?? '{{url}}',
+  description: 'TODO: describe what this subagent does.',
+  auth: bearer(clerkM2MToken()),
+})

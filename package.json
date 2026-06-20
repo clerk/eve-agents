@@ -17,6 +17,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "gen:agent": "turbo gen agent",
+    "gen:subagent": "turbo gen subagent",
     "demo:create-machines": "bun --env-file=apps/main-agent/.env.local run scripts/demo/create-agent-machines.ts"
   },
   "devDependencies": {

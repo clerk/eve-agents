@@ -36,6 +36,16 @@ The dashboard's chat has a flow selector so you can call the agent as a signed-i
 | [`apps/project-agent`](apps/project-agent) | Subagent (port 3002). Reachable machine-to-machine only, so inbound callers must present a scoped Clerk M2M token. Exposes a `manage_project` tool. |
 | [`packages/clerk-eve-auth`](packages/clerk-eve-auth) | `@clerk/eve-auth`. The `clerkAuth()` channel authenticator and the `clerkM2MToken()` outbound-token resolver. |
 
+## Installing with shadcn
+
+This repo doubles as a public [shadcn GitHub registry](https://ui.shadcn.com/docs/registry/github), so you can easily pull the `clerkAuth()` helper into any Eve project (regardless of framework) without cloning this repository.
+
+```bash
+bunx --bun shadcn@latest add clerk/eve-agents/auth
+```
+
+The helper lands at `lib/clerk-auth.ts`, ready to drop into your channel's `auth: [...]` list.
+
 ## Getting started
 
 ### Prerequisites

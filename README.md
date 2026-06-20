@@ -26,8 +26,6 @@ It covers three patterns:
 
 The dashboard's chat has a flow selector so you can call the agent as a signed-in user, as an API key, or unauthenticated, and watch each behave differently.
 
-> [!NOTE]
-> This branch wires the Clerk machines **by hand** to keep things simple. The [`m2m-sync`](https://github.com/clerk/eve-agents-with-clerk/tree/m2m-sync) branch automates the same setup with a CLI and an agent-graph dashboard.
 
 ## Apps and packages
 
@@ -88,7 +86,7 @@ export default eveChannel({
 })
 ```
 
-There's no `localDev()`, so unauthenticated requests are rejected with a real `401` even on localhost. (The starter wraps `clerkAuth()` to strip credentials when it sees a `no-auth-demo` header, since a browser can't drop its own same-origin cookie — that powers the "Unauthenticated" flow below.)
+This starter intentionally omits [`localDev()`](https://eve.dev/docs/guides/auth-and-route-protection#localdev) so unauthenticated requests are rejected with a real `401` even on localhost. `localDev()` would short-circuit Clerk auth in development, which makes it harder to test the real auth flows this demo is built around.
 
 ### API key auth
 
@@ -136,30 +134,57 @@ export default defineRemoteAgent({
 
 The token is scope-checked on the other side: the main agent's machine must be scoped to the project agent's machine in Clerk, which is the scope you created during setup.
 
-### Prefilling dynamic instructions
+### Enriching dynamic instructions with user info
 
-Whoever the caller is (a session user, an API key's user, or a calling machine), the authenticated principal is available on the session, so the agent's instructions are built per request from auth context, including which token type authenticated the call.
+With [dynamic instructions](https://eve.dev/docs/guides/dynamic-capabilities#dynamic-instructions), you can enrich you agent's prompt with session specific context. `ctx.session.auth.current` is whichever principal `clerkAuth()` produced (a user or machine), so you can customize the prompt based on the principal.
 
 ```ts
 // apps/main-agent/agent/instructions.ts
-'session.started': (_event, ctx) => {
-  const auth = ctx.session.auth.current
-  const sections = [/* … */]
+export default defineDynamic({
+  events: {
+    'session.started': (_event, ctx) => {
+      const auth = ctx.session.auth.current
+      const lines = ['You are a helpful assistant.']
 
-  if (auth?.principalType === 'user' && auth.attributes.name) {
-    sections.push(`You are speaking with ${auth.attributes.name}.`)
-  }
-  return defineInstructions({ markdown: sections.join('\n\n') })
-}
+      if (auth?.principalType === 'user' && auth.attributes.name) {
+        lines.push(`You are speaking with ${auth.attributes.name}.`)
+      }
+      return defineInstructions({ markdown: lines.join('\n\n') })
+    },
+  },
+})
 ```
+
+### Sending auth context from client
+
+Dynamic instructions run when a session starts. To send per-turn, ephemeral context from the browser, use `clientContext` instead. It's passed to the model alongside the message and never stored on the session history.
+
+```ts
+// apps/dashboard/src/components/chat/chat.tsx
+const { user } = useUser()
+const { orgId } = useAuth()
+
+const agent = useEveAgent({
+  prepareSend: input => ({
+    ...input,
+    clientContext: {
+      // ...,
+      user: user?.fullName ?? null,
+      orgId: orgId ?? null,
+    },
+  }),
+})
+```
+
+See eve's [Attach page context per turn](https://eve.dev/docs/guides/frontend/overview#attach-page-context-per-turn) for the full guide.
 
 ### Testing the auth flows
 
 The chat header has a dropdown that switches how the request authenticates:
 
-- **Session** — your signed-in Clerk session (the cookie). The dashboard also attaches `clientContext` (route, name, org) on this flow only.
+- **Session** — your signed-in Clerk session (the cookie). The dashboard sends logged in user info through `useEveAgent` hook's `clientContext`.
 - **API key** — sends the key from the input's settings dialog as a bearer token; the agent runs as that key's user.
-- **Unauthenticated** — sends the `no-auth-demo` header so the agent strips credentials and returns a `401`.
+- **Unauthenticated** — sends a custom `no-auth-demo` header so the agent strips credentials and returns a `401`.
 
 ## Commands
 
@@ -180,7 +205,7 @@ The agents also expose per-app eve scripts (`eve:deploy`, `eve:info`). Run them 
 
 The dashboard runs the main-agent via `withEve` ([next.config.ts](apps/dashboard/next.config.ts)) as a co-located service, so deploying the dashboard ships the main agent with it. The `project-agent` is a separate deployment. Deploy it first to get its URL.
 
-Set these on each deployment (one Clerk instance across all of them):
+Set these on each deployment. Use credentials from your Clerk **production instance** — the keys in `.env.local` belong to a development instance and aren't valid in production. Replace `CLERK_SECRET_KEY`, the publishable keys, and `CLERK_MACHINE_SECRET_KEY` with their production-instance equivalents.
 
 | | Dashboard (+ main-agent) | project-agent |
 | --- | --- | --- |
@@ -192,7 +217,7 @@ Set these on each deployment (one Clerk instance across all of them):
 | `PROJECT_AGENT_URL` | the deployed project-agent URL | — |
 
 > [!TIP]
-> The dashboard's `CLERK_MACHINE_SECRET_KEY` is **main-agent's** (it runs main-agent via `withEve`). Use main-agent's `.env.local` value. Make sure the two machines are scoped to each other in Clerk, same as local.
+> The dashboard runs `main-agent` via `withEve`, so its `CLERK_MACHINE_SECRET_KEY` is `main-agent`'s machine secret from your Clerk production instance. Remember to scope `main-agent` and `project-agent` to each other in both instances.
 
 ## Support
 

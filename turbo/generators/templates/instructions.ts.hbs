@@ -1,7 +1,0 @@
-import { clerkInstructions } from '@clerk/eve-auth/instructions'
-
-export default clerkInstructions((auth, userInfo) => [
-  'You are a helpful assistant.',
-  userInfo &&
-    `Use the following info about the caller to personalize your response:\n${userInfo}`,
-])

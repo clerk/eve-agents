@@ -44,11 +44,3 @@ bun run demo:create-machines
 ```
 
 It calls `clerk.machines.create()` for each machine and `clerk.machines.createScope(main.id, project.id)` for the one-way scope, then prints both secret keys. Copy them into the matching `apps/<name>/.env.local` as `CLERK_MACHINE_SECRET_KEY`.
-
-To scaffold a new subagent and wire its machine in one step, use the subagent generator:
-
-```bash
-bun run gen:subagent
-```
-
-Answer **yes** to *Link a Clerk machine?* and the generator finds the host's machine, creates one for the new subagent, scopes the host to call it, and prints the new secret key.

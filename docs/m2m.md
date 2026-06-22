@@ -11,7 +11,7 @@ Each agent in your system is represented by a Clerk **machine** — a distinct i
 The main agent declares the project agent as a remote subagent and signs the outbound call with `clerkM2MToken()`, which mints a short-lived token from the agent's machine secret key.
 
 ```ts
-// apps/main-agent/agent/subagents/project.ts
+// apps/dashboard/agent/subagents/project.ts
 import { clerkM2MToken } from '@clerk/eve-auth/m2m'
 import { defineRemoteAgent } from 'eve'
 import { bearer } from 'eve/agents/auth'

@@ -3,7 +3,7 @@
     <img src="https://images.clerk.com/static/logo-light-mode-400x400.png" height="64" alt="Clerk logo">
   </a>
   <br />
-  <h1 align="center">Eve Agents x Clerk Auth Starter</h1>
+  <h1 align="center">Eve Agents with Clerk</h1>
 </p>
 
 <div align="center">
@@ -14,22 +14,20 @@
 
 </div>
 
-A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples). One auth connector handles every Clerk token type — session, API key, M2M, OAuth — with optional permission, scope, and role gates. Includes agent-to-agent M2M auth, per-caller dynamic instructions, and tooling for spinning up new agents in seconds.
+A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples). One auth connector handles every Clerk token type — session, API key, M2M, OAuth — with optional permission, scope, and role gates. Includes agent-to-agent M2M auth, enchriched agent instructions and tool-call authorization.
 
 ## What's inside
 
-1. **Clerk auth helpers** — Eve-compatible channel verifiers and helpers for securing subagents and tool calls.
+1. **Clerk auth helpers** — Eve-compatible channel auth and helpers for securing subagents and tool calls.
 2. **Three sample apps** — a Next.js dashboard with chat UI, a main agent that delegates work, and a project-agent subagent that's reachable only via M2M.
-3. **Dynamic instructions** — per-caller personalization driven by the authenticated principal.
-4. **Generators** — `bun run gen:agent` and `bun run gen:subagent` scaffold new agents and subagents, optionally creating Clerk machines and scopes in one step.
-5. **shadcn registry** — pull `clerkAuth()` into any Eve project with `bunx shadcn add clerk/eve-agents/auth`.
+3. **Dynamic instructions** — Enchriched prompts with Clerk auth context.
+4. **shadcn registry** — pull Clerk auth helpers into an existing eve project with shadcn.
 
 | Workspace | Description |
 | --- | --- |
-| [`apps/dashboard`](apps/dashboard) | Next.js app (port 3000). Clerk-authenticated chat UI with variety of auth flows for testing. |
-| [`apps/main-agent`](apps/main-agent) | Primary eve agent (port 3001). Accepts every Clerk token type. |
-| [`apps/project-agent`](apps/project-agent) | Remote subagent (port 3002). Reachable machine-to-machine only. |
-| [`packages/clerk-eve-auth`](packages/clerk-eve-auth) | Clerk helpers and channel auth verifiers for eve agents. |
+| [`apps/dashboard`](apps/dashboard) | Next.js app featuring Clerk-authenticated chat UI with a colocated `main-agent` (mounted via `withEve`). |
+| [`apps/project-agent`](apps/project-agent) | Remote subagent that communicates with `main-agent` (port 3002). Reachable machine-to-machine only. |
+| [`packages/clerk-eve-auth`](packages/clerk-eve-auth) | Clerk helpers and channel auth for eve agents. |
 
 
 ## Quick start
@@ -41,17 +39,22 @@ Prerequisites: [Bun](https://bun.sh) 1.3+, a [Clerk application](https://dashboa
 
 ```bash
 bun install
-cp apps/main-agent/.env.example apps/main-agent/.env.local
+```
+
+Copy the `.env.example` templates into `.env.local`:
+
+```bash
+cp apps/dashboard/.env.example apps/dashboard/.env.local
 cp apps/project-agent/.env.example apps/project-agent/.env.local
 ```
 
-Fill in `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, and `AI_GATEWAY_API_KEY` in each `.env.local`, then create the two Clerk machines and the M2M scope in one shot:
+Fill in `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, and `AI_GATEWAY_API_KEY` in each `.env.local`, then create the two Clerk machines with M2M scopes in one shot:
 
 ```bash
 bun run demo:create-machines
 ```
 
-Copy each printed secret into the matching `apps/<name>/.env.local` as `CLERK_MACHINE_SECRET_KEY`, then:
+Copy each printed secret into `CLERK_MACHINE_SECRET_KEY` — the main-agent secret in `apps/dashboard/.env.local`, the project-agent secret in `apps/project-agent/.env.local` — then:
 
 ```bash
 bun run dev
@@ -61,7 +64,7 @@ Open [http://localhost:3000](http://localhost:3000), sign in, and chat. Use the 
 
 ## Install with Shadcn
 
-Use shadcn to [add Clerk auth helpers into any Eve project](https://ui.shadcn.com/docs/registry/github) without cloning this repo.
+Use shadcn to install Clerk auth helpers into an existing eve project.
 
 ```bash
 bunx --bun shadcn@latest add clerk/eve-agents/auth
@@ -195,33 +198,6 @@ const agent = useEveAgent({
 
 See eve docs on [attaching page context](https://eve.dev/docs/guides/frontend/overview#attach-page-context-per-turn) for the full guide.
 
-## Generating new agents
-
-Bootstrap new agents and subagents with ease using Turbo generators.
-
-Scaffold a new empty eve agent under `apps/<name>/`, with the eve channel pre-wired with `clerkAuth()` and instructions enriched with Clerk user info.
-
-```bash
-bun run gen:agent
-```
-
-Prompts:
-- **Agent name** — folder and package name.
-- **AI Gateway model** — models fetched live from Vercel AI Gateway.
-- **Dev server port** — defaults to 3003.
-
-Scaffold a remote subagent file inside an existing agent app's `subagents/` folder, optionally creating and scoping its Clerk machine in one shot.
-
-```bash
-bun run gen:subagent
-```
-
-Prompts:
-- **Parent agent app** — pick from existing agent apps in project.
-- **Subagent name** — file name and Clerk machine prefix.
-- **Remote agent URL** — defaults to http://localhost:3002.
-- **Env var name** — auto-derived from the subagent name.
-- **Link a Clerk machine?** — when yes, finds the host's machine, creates one for the new subagent, scopes the host to call it, and prints the new secret key.
 
 ## Deploying to production
 

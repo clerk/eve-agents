@@ -11,14 +11,13 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo run dev --filter=dashboard",
-    "dev:agent": "turbo run dev --filter=main-agent",
     "eve:dev:headless": "turbo run dev:headless",
     "typecheck": "turbo typecheck",
     "lint": "biome check",
     "format": "biome format --write",
     "gen:agent": "turbo gen agent",
     "gen:subagent": "turbo gen subagent",
-    "demo:create-machines": "bun --env-file=apps/main-agent/.env.local run scripts/demo/create-agent-machines.ts"
+    "demo:create-machines": "bun --env-file=apps/dashboard/.env.local run scripts/demo/create-agent-machines.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
@@ -48,5 +47,8 @@
   ],
   "engines": {
     "node": "24.x"
+  },
+  "dependencies": {
+    "vercel": "^54.14.5"
   }
 }

@@ -12,7 +12,9 @@ function clerkAuthWithDemo(): AuthFn<Request> {
     const headers = new Headers(request.headers)
     headers.delete('cookie')
     headers.delete('authorization')
-    return inner(new Request(request.url, { method: request.method, headers }))
+    return inner(
+      new Request(request.url, { method: request.method, headers })
+    )
   }
 }
 

@@ -15,6 +15,10 @@
     "./m2m": {
       "types": "./src/m2m.ts",
       "default": "./src/m2m.ts"
+    },
+    "./connect": {
+      "types": "./src/connect.ts",
+      "default": "./src/connect.ts"
     }
   },
   "scripts": {

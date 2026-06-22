@@ -14,7 +14,11 @@ import { ToolMessage } from './tool-message'
 type EveInputRequest = {
   requestId: string
   prompt?: string
-  options?: { id: string; label: string }[]
+  options?: {
+    id: string
+    label: string
+    style?: 'default' | 'primary' | 'danger'
+  }[]
   allowFreeform?: boolean
 }
 
@@ -25,7 +29,9 @@ function inputRequestOf(part: ToolPart): EveInputRequest | undefined {
 }
 
 const toolNameOf = (part: ToolPart): string =>
-  part.type === 'dynamic-tool' ? part.toolName : part.type.replace(/^tool-/, '')
+  part.type === 'dynamic-tool'
+    ? part.toolName
+    : part.type.replace(/^tool-/, '')
 
 // The `message` the model handed to a subagent tool call.
 function subagentMessage(part: ToolPart): string | undefined {
@@ -38,7 +44,10 @@ export function Messages({
   onAnswer,
 }: {
   messages: UIMessage[]
-  onAnswer?: (requestId: string, text: string) => void
+  onAnswer?: (
+    requestId: string,
+    response: { optionId?: string; text?: string }
+  ) => void
 }) {
   if (messages.length === 0) {
     return (
@@ -67,12 +76,12 @@ export function Messages({
             const toolPart = part as ToolPart
             const toolName = toolNameOf(toolPart)
             const request = inputRequestOf(toolPart)
-            // Show the freeform answer card under an `ask_question` that is still
-            // awaiting a response.
-            const awaitingFreeform =
+            // Show the answer card under an `ask_question` still awaiting a
+            // response — whether it offers options, freeform, or both.
+            const awaitingInput =
               toolName === 'ask_question' &&
               toolPart.state === 'approval-requested' &&
-              request?.allowFreeform === true
+              request !== undefined
             // Subagent delegations get an agent card above the tool call.
             const isSubagent = toolName.startsWith('eve:subagent')
 
@@ -85,10 +94,14 @@ export function Messages({
                   />
                 )}
                 <ToolMessage part={toolPart} />
-                {awaitingFreeform && request && (
+                {awaitingInput && request && (
                   <AskQuestion
                     prompt={request.prompt ?? ''}
-                    onSubmit={text => onAnswer?.(request.requestId, text)}
+                    options={request.options}
+                    allowFreeform={request.allowFreeform}
+                    onSubmit={response =>
+                      onAnswer?.(request.requestId, response)
+                    }
                   />
                 )}
               </Fragment>

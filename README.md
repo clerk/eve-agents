@@ -140,6 +140,27 @@ After `clerkAuth()` succeeds, eve exposes the caller as `ctx.session.auth.curren
 Attributes differ by principal and Clerk token type. See [docs/attributes.md](docs/attributes.md) to see type definitions for each.
 
 
+## Provider OAuth in tools
+
+`clerkConnect()` lets a tool call a third-party API on the caller's behalf, with Clerk brokering the OAuth. Used as an Eve tool `auth` strategy, it reads the caller's stored provider token and — when it's missing or under-scoped — surfaces a **Connect** link that runs Clerk's frontend connect flow and resumes the turn once authorized.
+
+```ts
+// agent/tools/list_repos.ts
+import { clerkConnect } from '@clerk/eve-auth/connect'
+
+export default defineTool({
+  inputSchema: z.object({}),
+  auth: clerkConnect('github', { scopes: ['repo'] }),
+  async execute(_input, ctx) {
+    const { token } = await ctx.getToken() // the caller's GitHub token
+    // …call the provider API
+  },
+})
+```
+
+Interactive connect only resolves for signed-in **user** callers. Machine tokens use a non-interactive connection mode. See [`apps/dashboard/agent/tools/list_repos.ts`](apps/dashboard/agent/tools/list_repos.ts).
+
+
 ## How it works
 
 ### Authorized agent delegation and collaboration

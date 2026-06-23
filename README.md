@@ -109,6 +109,22 @@ export default defineRemoteAgent({
 })
 ```
 
+Use `clerkConnect()` as a tool's `auth` to call a provider API on the caller's behalf, with Clerk brokering the OAuth:
+
+```ts
+// agent/tools/list_repos.ts
+import { clerkConnect } from '@/lib/clerk-auth/connect'
+import { defineTool } from 'eve/tools'
+
+export default defineTool({
+  inputSchema: z.object({}),
+  auth: clerkConnect('github', { scopes: ['repo'] }),
+  async execute(_input, ctx) {
+    const { token } = await ctx.getToken() // the caller's GitHub token
+  },
+})
+```
+
 ## Configuring `clerkAuth()`
 
 `clerkAuth()` verifies any Clerk token type and maps the caller to an eve principal. Default behavior returns `null` on failure so the chain walks to the next authenticator. Every option is opt-in — combine them freely.

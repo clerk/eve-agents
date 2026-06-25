@@ -38,7 +38,7 @@ A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Cler
 Prerequisites:
 
 - [Bun](https://bun.sh) 1.3+ and [Node.js](https://nodejs.org) 24+ (eve requires Node 24).
-- A [Clerk application](https://dashboard.clerk.com/sign-up?utm_source=github&utm_medium=eve_examples). The session and M2M flows work out of the box; to exercise every flow, enable [**API keys**](https://dashboard.clerk.com/~/api-keys) in the Clerk Dashboard and add a **GitHub** social connection with custom credentials and the `repo` scope (the `list_repos` tool's OAuth flow needs it).
+- A [Clerk application](https://dashboard.clerk.com/sign-up?utm_source=github&utm_medium=eve_examples). The session and M2M flows work out of the box; to exercise every flow, enable [**API keys**](https://dashboard.clerk.com/~/platform/api-keys) in the Clerk Dashboard and add a **GitHub** social connection with custom credentials and the `repo` scope (the `list_repos` tool's OAuth flow needs it).
 - A [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) API key.
 
 ```bash

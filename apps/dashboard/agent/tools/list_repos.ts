@@ -3,6 +3,8 @@ import { defineTool } from 'eve/tools'
 import type { ToolContext } from 'eve/tools'
 import { z } from 'zod'
 
+// `repo` grants public + private repo access (what `visibility: 'all'` below
+// needs). For public repos only, use `public_repo` here and `visibility: 'public'`.
 const SCOPES = ['repo'] as const
 
 // GitHub's `affiliation` filter. 'all' expands to every relationship; the

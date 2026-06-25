@@ -13,7 +13,7 @@ export type ClerkM2MTokenOptions = {
  * Returns a lazy resolver that mints a Clerk M2M token from the caller's machine
  * secret key. Pass it to eve's `bearer(...)` for remote-agent outbound auth:
  *
- *   auth: bearer(clerkM2MToken({ machineSecretKey: process.env.MAIN_MACHINE_SECRET_KEY }))
+ *   auth: bearer(clerkM2MToken({ machineSecretKey: process.env.CLERK_MACHINE_SECRET_KEY }))
  *
  */
 export function clerkM2MToken(options: ClerkM2MTokenOptions = {}) {

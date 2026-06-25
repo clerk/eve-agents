@@ -92,7 +92,7 @@ export type ClerkAuthOptions<
  * By default returns `null` on failure so the chain walks to the next
  * authenticator. Set `onUnauthenticated: 'throw'` to reject with a 401 instead,
  * or pass `handleAuth` for full custom inspection. Pass `permissions`,
- * `apiKeyScopes`, or `m2mTokenScopes` to enforce authorization after auth
+ * `allowedRoles`, or `apiKeyScopes` to enforce authorization after auth
  * succeeds (each missing entry throws `ForbiddenError`).
  */
 export function clerkAuth<

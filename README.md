@@ -14,13 +14,13 @@
 
 </div>
 
-A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples). One auth connector handles every Clerk token type — session, API key, M2M, OAuth — with optional permission, scope, and role gates. Includes agent-to-agent M2M auth, enchriched agent instructions and tool-call authorization.
+A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples). One auth connector handles every Clerk token type — session, API key, M2M, OAuth — with optional permission, scope, and role gates. Includes agent-to-agent M2M auth, enriched agent instructions, and tool-call authorization.
 
 ## What's inside
 
 1. **Clerk auth helpers** — Eve-compatible channel auth and helpers for securing subagents and tool calls.
-2. **Three sample apps** — a Next.js dashboard with chat UI, a main agent that delegates work, and a project-agent subagent that's reachable only via M2M.
-3. **Dynamic instructions** — Enchriched prompts with Clerk auth context.
+2. **Two sample apps** — a Next.js dashboard with a chat UI and a colocated `main-agent` that delegates work, plus a `project-agent` subagent reachable only via M2M.
+3. **Dynamic instructions** — Enriched prompts with Clerk auth context.
 4. **shadcn registry** — pull Clerk auth helpers into an existing eve project with shadcn.
 
 | Workspace | Description |
@@ -35,7 +35,11 @@ A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Cler
 > [!TIP]
 > Want to use Clerk auth in an existing eve project? Skip the quickstart and [install the auth helpers with shadcn.](#install-with-shadcn)
 
-Prerequisites: [Bun](https://bun.sh) 1.3+, a [Clerk application](https://dashboard.clerk.com/sign-up?utm_source=github&utm_medium=eve_examples), and a [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) API key.
+Prerequisites:
+
+- [Bun](https://bun.sh) 1.3+ and [Node.js](https://nodejs.org) 24+ (eve requires Node 24).
+- A [Clerk application](https://dashboard.clerk.com/sign-up?utm_source=github&utm_medium=eve_examples). The session and M2M flows work out of the box; to exercise every flow, enable **API keys** in the Clerk Dashboard (Configure → API keys) and add a **GitHub** social connection with custom credentials and the `repo` scope (the `list_repos` tool's OAuth flow needs it).
+- A [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) API key.
 
 ```bash
 bun install
@@ -48,7 +52,7 @@ cp apps/dashboard/.env.example apps/dashboard/.env.local
 cp apps/project-agent/.env.example apps/project-agent/.env.local
 ```
 
-Fill in `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, and `AI_GATEWAY_API_KEY` in each `.env.local`, then create the two Clerk machines with M2M scopes in one shot:
+Fill in the Clerk keys and `AI_GATEWAY_API_KEY` in each `.env.local` — the dashboard reads `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, the project-agent reads `CLERK_PUBLISHABLE_KEY` (the `.env.example` files already use the right names). Then create the two Clerk machines with M2M scopes in one shot:
 
 ```bash
 bun run demo:create-machines

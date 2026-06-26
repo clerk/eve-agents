@@ -22,6 +22,14 @@ export default eveChannel({
 })
 ```
 
+## Use API Key from environment variable
+
+```ts
+export default eveChannel({
+  auth: [clerkAuth({ eveApiKeyEnvVar: 'EVE_API_KEY' })],
+})
+```
+
 ## Require permissions for session callers
 
 Each missing entry throws `ForbiddenError` (403).

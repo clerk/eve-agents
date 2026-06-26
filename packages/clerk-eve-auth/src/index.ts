@@ -81,6 +81,12 @@ export type ClerkAuthOptions<
    *  - `'throw'`: throw an eve `UnauthenticatedError` to short-circuit with a 401.
    */
   onUnauthenticated?: 'skip' | 'throw'
+  /**
+   * Name of the environment variable holding a Clerk API key. When set, and a matching environment variable is present, the channel authenticates with that API key.
+   *
+   * Useful for running the eve agent in terminal (TUI) mode.
+   */
+  eveApiKeyEnvVar?: string
 }
 
 /**
@@ -106,6 +112,7 @@ export function clerkAuth<
     apiKeyScopes,
     handleAuth,
     onUnauthenticated = 'skip',
+    eveApiKeyEnvVar,
   } = options
 
   const clerk = createClerkClient({
@@ -119,10 +126,30 @@ export function clerkAuth<
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
       process.env.CLERK_PUBLISHABLE_KEY,
   })
+
   const machineSecretKey =
     clientOptions.machineSecretKey ?? process.env.CLERK_MACHINE_SECRET_KEY
 
+  let eveApiKey: string | undefined
+  const envVarName = eveApiKeyEnvVar
+
+  if (envVarName && process.env[envVarName]) {
+    eveApiKey = process.env[envVarName]
+    console.log(`Detected ${envVarName} environment variable.`)
+  }
+
   return async request => {
+    let requestToAuthenticate = request
+
+    if (eveApiKey) {
+      const newHeaders = new Headers(request.headers)
+      newHeaders.set('Authorization', `Bearer ${eveApiKey}`)
+
+      requestToAuthenticate = new Request(request.url, {
+        ...request,
+        headers: newHeaders,
+      })
+    }
     // Authenticate from the session cookie OR a bearer token (API key, M2M,
     // OAuth). Don't short-circuit on a missing Authorization header — the
     // dashboard's same-origin calls carry a Clerk session cookie, not a bearer.
@@ -130,14 +157,17 @@ export function clerkAuth<
     // unauthenticated; by default the walk falls through to the next
     // authenticator, but `onUnauthenticated: 'throw'` can short-circuit.
     const state = await clerk
-      .authenticateRequest(request, {
+      .authenticateRequest(requestToAuthenticate, {
         // Cast keeps Clerk's overload on the wide 'any' branch so `toAuth()`
         // returns the full SignedIn | Machine union; the runtime value is still
         // the narrowed array when `acceptsToken` was provided.
         acceptsToken: (acceptsToken ? [...acceptsToken] : 'any') as 'any',
         machineSecretKey,
       })
-      .catch(() => null)
+      .catch(e => {
+        console.error('Error authenticating with Clerk', e.message)
+        return null
+      })
 
     // Cast only at the handleAuth boundary so `state`'s inferred type (which
     // preserves the discriminator) is what flows into `toAuth()` below.

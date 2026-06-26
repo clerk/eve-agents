@@ -3,7 +3,7 @@
     <img src="https://images.clerk.com/static/logo-light-mode-400x400.png" height="64" alt="Clerk logo">
   </a>
   <br />
-  <h1 align="center">Eve Agents with Clerk</h1>
+  <h1 align="center">eve agents with Clerk</h1>
 </p>
 
 <div align="center">
@@ -14,11 +14,11 @@
 
 </div>
 
-A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples). One auth connector handles every Clerk token type — session, API key, M2M, OAuth — with optional permission, scope, and role gates. Includes agent-to-agent M2M auth, enriched agent instructions, and tool-call authorization.
+A monorepo showing how to secure [eve](https://vercel.com/eve) agents with [Clerk](https://clerk.com?utm_source=github&utm_medium=eve_examples). One auth connector handles every Clerk token type — session, API key, M2M, OAuth — with optional permission, scope, and role gates. Includes agent-to-agent M2M auth, enriched agent instructions, and tool-call authorization.
 
 ## What's inside
 
-1. **Clerk auth helpers** — Eve-compatible channel auth and helpers for securing subagents and tool calls.
+1. **Clerk auth helpers** — eve-compatible channel auth and helpers for securing subagents and tool calls.
 2. **Two sample apps** — a Next.js dashboard with a chat UI and a colocated `main-agent` that delegates work, plus a `project-agent` subagent reachable only via M2M.
 3. **Dynamic instructions** — Enriched prompts with Clerk auth context.
 4. **shadcn registry** — pull Clerk auth helpers into an existing eve project with shadcn.
@@ -162,7 +162,7 @@ Attributes differ by principal and Clerk token type. See [docs/attributes.md](do
 
 ## Provider OAuth in tools
 
-`clerkConnect()` lets a tool call a third-party API on the caller's behalf, with Clerk brokering the OAuth. Used as an Eve tool `auth` strategy, it reads the caller's stored provider token and — when it's missing or under-scoped — surfaces a **Connect** link that runs Clerk's frontend connect flow and resumes the turn once authorized.
+`clerkConnect()` lets a tool call a third-party API on the caller's behalf, with Clerk brokering the OAuth. Used as an eve tool `auth` strategy, it reads the caller's stored provider token and — when it's missing or under-scoped — surfaces a **Connect** link that runs Clerk's frontend connect flow and resumes the turn once authorized.
 
 ```ts
 // agent/tools/list_repos.ts

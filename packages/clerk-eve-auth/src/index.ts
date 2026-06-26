@@ -130,10 +130,11 @@ export function clerkAuth<
     clientOptions.machineSecretKey ?? process.env.CLERK_MACHINE_SECRET_KEY
 
   let eveApiKey: string | undefined
+  const envVarName = eveApiKeyEnvVar
 
-  if (eveApiKeyEnvVar && process.env[eveApiKeyEnvVar]) {
-    eveApiKey = process.env[eveApiKeyEnvVar]
-    console.log(`Detected ${eveApiKeyEnvVar} environment variable.`)
+  if (envVarName && process.env[envVarName]) {
+    eveApiKey = process.env[envVarName]
+    console.log(`Detected ${envVarName} environment variable.`)
   }
 
   return async request => {

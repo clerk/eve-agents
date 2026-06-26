@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Eve',
+  title: 'eve',
   description: 'A Next.js app with Clerk authentication.',
 }
 

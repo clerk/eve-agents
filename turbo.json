@@ -10,7 +10,13 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".eve/**", ".output/**", ".next/**", "!.next/cache/**"]
+      "outputs": [
+        ".eve/**",
+        ".output/**",
+        ".vercel/output/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
     "typecheck": {
       "dependsOn": ["^build"]

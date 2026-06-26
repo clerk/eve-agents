@@ -38,8 +38,8 @@ A monorepo showing how to secure [Eve](https://vercel.com/eve) agents with [Cler
 Prerequisites:
 
 - [Bun](https://bun.sh) 1.3+ and [Node.js](https://nodejs.org) 24+ (eve requires Node 24).
-- A [Clerk application](https://dashboard.clerk.com/sign-up?utm_source=github&utm_medium=eve_examples). The session and M2M flows work out of the box; to exercise every flow, enable [**API keys**](https://dashboard.clerk.com/~/platform/api-keys) in the Clerk Dashboard and add a **GitHub** social connection with custom credentials and the `repo` scope (the `list_repos` tool's OAuth flow needs it).
-- A [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) API key.
+- A [Clerk application](https://dashboard.clerk.com/sign-up?utm_source=github&utm_medium=eve_examples). The session and M2M flows work out of the box; to exercise every flow, enable [**API keys**](https://dashboard.clerk.com/~/platform/api-keys) in the Clerk Dashboard and add a **GitHub** [social connection](https://clerk.com/docs/guides/configure/auth-strategies/social-connections/github) with **custom credentials** (the `list_repos` tool requests the `repo` scope at connect time, which Clerk only allows with custom credentials — not the shared development ones).
+- A [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) API key. The agents default to a free-tier model (`anthropic/claude-haiku-4.5`), so a new account runs the demo without adding credits — to use a more capable model, set it in `apps/*/agent/agent.ts` and confirm your account has access ([available models](https://vercel.com/d?to=%2F%5Bteam%5D%2F~%2Fai-gateway%2Fmodels)).
 
 ```bash
 bun install

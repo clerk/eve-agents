@@ -10,5 +10,6 @@ node_modules
 dist
 .turbo
 .DS_Store
+.vscode
 *.tsbuildinfo
 agents.json

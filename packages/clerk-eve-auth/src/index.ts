@@ -82,8 +82,9 @@ export type ClerkAuthOptions<
    */
   onUnauthenticated?: 'skip' | 'throw'
   /**
-   * The environment variable name for a branded API key. If set, the authenticator will authenticate with the API key instead.
-   * Useful for using the eve agent in terminal (TUI) mode.
+   * Name of the environment variable holding a Clerk API key. When set, and a matching environment variable is present, the channel authenticates with that API key.
+   *
+   * Useful for running the eve agent in terminal (TUI) mode.
    */
   eveApiKeyEnvVar?: string
 }

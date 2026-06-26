@@ -48,7 +48,11 @@ export function ChatInput({
         <PromptInputTools>
           <ApiKeySettings />
         </PromptInputTools>
-        <PromptInputSubmit status={status} onStop={onStop} disabled={disabled} />
+        <PromptInputSubmit
+          status={status}
+          onStop={onStop}
+          disabled={disabled}
+        />
       </PromptInputFooter>
     </PromptInput>
   )

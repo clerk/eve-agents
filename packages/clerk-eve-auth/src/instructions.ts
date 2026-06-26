@@ -29,7 +29,7 @@ export type ClerkInstructionsResult =
 export type ClerkInstructionsCallback = (
   auth: SessionAuthContext | null,
   userInfo: string,
-  ctx: DynamicResolveContext,
+  ctx: DynamicResolveContext
 ) => ClerkInstructionsResult | Promise<ClerkInstructionsResult>
 
 function buildUserInfo(auth: SessionAuthContext | null): string {

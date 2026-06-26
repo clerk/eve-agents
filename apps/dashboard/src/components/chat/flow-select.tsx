@@ -21,14 +21,18 @@ export function FlowSelect({
   return (
     <Select value={value} onValueChange={v => onChange(v as FlowId)}>
       <SelectTrigger className="w-[220px]">
-        <SelectValue placeholder="Select a flow">{flow?.label}</SelectValue>
+        <SelectValue placeholder="Select a flow">
+          {flow?.label}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {FLOWS.map(f => (
           <SelectItem key={f.id} value={f.id}>
             <div className="w-full p-1">
               <p className="text-sm font-medium">{f.label}</p>
-              <p className="text-xs text-muted-foreground">{f.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {f.description}
+              </p>
             </div>
           </SelectItem>
         ))}

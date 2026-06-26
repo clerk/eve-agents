@@ -35,7 +35,9 @@ export function AgentItem({
       </ItemMedia>
       <ItemContent className="pr-4">
         <ItemTitle>{name}-agent</ItemTitle>
-        {message && <ItemDescription className="text-xs">{message}</ItemDescription>}
+        {message && (
+          <ItemDescription className="text-xs">{message}</ItemDescription>
+        )}
       </ItemContent>
     </Item>
   )

@@ -23,7 +23,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const { user } = useUser()
   const clerk = useClerk()
-  
+
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
@@ -66,10 +66,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenuItem>
               ))}
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => clerk.openUserProfile({ __experimental_startPath: '/api-keys' })}>
-                    <KeyRoundIcon />
-                    <span>API Keys</span>
-         
+                <SidebarMenuButton
+                  onClick={() =>
+                    clerk.openUserProfile({
+                      __experimental_startPath: '/api-keys',
+                    })
+                  }
+                >
+                  <KeyRoundIcon />
+                  <span>API Keys</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

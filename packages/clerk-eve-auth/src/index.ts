@@ -181,7 +181,8 @@ export function clerkAuth<
 
       if (auth.orgId) attributes.orgId = auth.orgId
       if (auth.orgRole) attributes.role = auth.orgRole
-      if (auth.orgPermissions?.length) attributes.permissions = auth.orgPermissions
+      if (auth.orgPermissions?.length)
+        attributes.permissions = auth.orgPermissions
       const name = auth.sessionClaims?.name
 
       if (typeof name === 'string') attributes.name = name

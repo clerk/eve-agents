@@ -7,30 +7,15 @@ import {
   defineInteractiveAuthorization,
 } from 'eve/connections'
 import type { ToolContext } from 'eve/tools'
+import type { ClerkClient } from '@clerk/backend'
 
 /**
- * The OAuth providers Clerk can broker. Mirrors Clerk's `OAuthProvider`
- * union (not re-exported from `@clerk/backend`'s root) so `clerkConnect`'s
- * input is typed to every provider Clerk supports.
+ * The OAuth providers Clerk can broker
  */
-export type ClerkOAuthProvider =
-  | 'facebook'
-  | 'google'
-  | 'hubspot'
-  | 'github'
-  | 'tiktok'
-  | 'gitlab'
-  | 'discord'
-  | 'twitter'
-  | 'twitch'
-  | 'linkedin'
-  | 'linkedin_oidc'
-  | 'dropbox'
-  | 'bitbucket'
-  | 'microsoft'
-  | 'notion'
-  | 'apple'
-  | 'x'
+
+export type ClerkOAuthProvider = Parameters<
+  ClerkClient['users']['getUserOauthAccessToken']
+>[1]
 
 export type ClerkConnectOptions = {
   /** Extra provider scopes to require, e.g. `['repo']` for GitHub. */
